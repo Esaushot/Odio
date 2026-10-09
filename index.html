@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rankea a tu Maestro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;0,800;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --bg: #faf8f5;
+  --text: #1c1b1a;
+  --muted: #787570;
+  --border: #e6e4df;
+  
+  --glass-good: rgba(16, 185, 129, 0.15);
+  --glass-good-border: rgba(16, 185, 129, 0.4);
+  --glass-good-text: #047857;
+  
+  --glass-mid: rgba(245, 158, 11, 0.15);
+  --glass-mid-border: rgba(245, 158, 11, 0.4);
+  --glass-mid-text: #b45309;
+
+  --glass-bad: rgba(225, 29, 72, 0.15);
+  --glass-bad-border: rgba(225, 29, 72, 0.4);
+  --glass-bad-text: #be123c;
+  
+  --glass-rank: rgba(255, 255, 255, 0.85);
+  --glass-rank-border: rgba(255, 255, 255, 0.9);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  color:var(--text);
+  min-height:100vh;
+  background:var(--bg);
+  overflow-x:hidden;
+  position:relative;
+}
+
+/* ---------- Textura de grano sutil (inspirada en Image 2) ---------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* ---------- Tipografía y Estructura Editorial ---------- */
+h1, h2, h3, .logo { font-family: 'Playfair Display', serif; }
+
+nav{
+  position:sticky;top:0;z-index:40;
+  margin:0 auto;max-width:1200px;width:100%;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:24px 30px;
+  background:rgba(250, 248, 245, 0.85);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.logo{display:flex;align-items:center;gap:12px;font-weight:800;font-size:1.4rem;cursor:pointer;user-select:none;letter-spacing:-0.5px;color:#000}
+.logo i{font-size:1.2rem;color:var(--text)}
+.tabs{display:flex;gap:8px;align-items:center}
+.tab{
+  border:none;background:transparent;color:var(--muted);font:inherit;font-weight:500;font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;
+  padding:8px 16px;cursor:pointer;transition:0.3s;display:flex;align-items:center;gap:8px;border-radius:99px;
+}
+.tab:hover{color:var(--text);background:rgba(0,0,0,0.04)}
+.tab.active{color:var(--text);font-weight:700;background:rgba(0,0,0,0.06)}
+.tab.lock{padding:8px 12px}
+.hidden{display:none !important}
+
+/* ---------- Layout ---------- */
+main{max-width:1200px;margin:0 auto;padding:60px 30px 100px}
+.view{animation:fadeUp .6s cubic-bezier(0.2, 0.8, 0.2, 1) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.hero{text-align:center;margin-bottom:70px;max-width:800px;margin-inline:auto}
+.hero h1{font-size:clamp(2.5rem, 6vw, 4.5rem);font-weight:800;letter-spacing:-2px;line-height:1.05;color:#0f0e0d;margin-bottom:16px}
+.hero h1 span{font-style:italic;font-weight:500;color:var(--muted)}
+.hero p{color:var(--muted);font-size:1.1rem;font-weight:300;letter-spacing:0.2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:40px;padding:20px 0}
+
+/* ---------- Tarjetas Polaroid Físicas ---------- */
+.card{
+  background:#ffffff;
+  padding:16px 16px 75px 16px;
+  box-shadow:10px 15px 30px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.02);
+  border:1px solid #eae5dc;
+  position:relative;
+  cursor:pointer;
+  transition:transform .4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow .4s ease;
+  transform-origin: center center;
+}
+.card:hover{
+  transform:scale(1.04) rotate(0deg) translateY(-10px) !important;
+  box-shadow:15px 25px 45px rgba(0,0,0,0.12), 0 5px 10px rgba(0,0,0,0.04);
+  z-index:10;
+}
+.rank{
+  position:absolute;top:22px;left:22px;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
+  font-weight:700;font-size:0.95rem;background:var(--glass-rank);border:1px solid var(--glass-rank-border);z-index:2;
+  backdrop-filter:blur(8px);
+}
+.rank.r1{background:#fde047;color:#422006;border:none}
+.rank.r2{background:#e5e7eb;color:#111827;border:none}
+.rank.r3{background:#fdba74;color:#fff;border:none}
+
+.avatar{
+  width:100%;aspect-ratio:1/1.1;object-fit:cover;display:block;
+  /* Filtro vintage y granulado estilo Image 2 */
+  filter: sepia(0.35) contrast(1.15) brightness(0.95) saturate(0.7) hue-rotate(-10deg);
+  transition: filter 0.4s;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+}
+.card:hover .avatar{filter:sepia(0.15) contrast(1.1) brightness(1) saturate(0.9)}
+
+.card h3{
+  font-family:'Caveat',cursive;font-size:2.2rem;font-weight:700;color:#222;
+  position:absolute;bottom:32px;left:0;width:100%;text-align:center;line-height:1;transform:rotate(-1.5deg);
+}
+.subject{
+  font-family:'Inter',sans-serif;color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:1.5px;
+  position:absolute;bottom:14px;left:0;width:100%;text-align:center;
+}
+
+/* Indicador flotante de score en cristal con alta saturación */
+.score{
+  position:absolute;top:22px;right:22px;
+  display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:10px;
+  font-weight:700;font-size:1rem;backdrop-filter:blur(12px) saturate(200%);-webkit-backdrop-filter:blur(12px) saturate(200%);
+  z-index:2;box-shadow:0 8px 24px rgba(0,0,0,0.08);
+}
+.score small{font-size:0.7rem;font-weight:400}
+.score.good{background:var(--glass-good);border:1px solid var(--glass-good-border);color:var(--glass-good-text)} 
+.score.mid{background:var(--glass-mid);border:1px solid var(--glass-mid-border);color:var(--glass-mid-text)} 
+.score.bad{background:var(--glass-bad);border:1px solid var(--glass-bad-border);color:var(--glass-bad-text)} 
+.score.none{background:rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.1);color:var(--muted);font-size:0.8rem;font-weight:500}
+
+.meta, .bar{display:none} /* Oculto para que el diseño Polaroid sea fiel al requerimiento */
+
+/* ---------- Botones Editorial ---------- */
+.btn{
+  border:none;font:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;color:#fff;
+  padding:12px 24px;border-radius:4px;transition:0.25s;display:inline-flex;align-items:center;gap:8px;
+  background:#111;text-transform:uppercase;letter-spacing:1px;
+}
+.btn:hover{background:#333;transform:translateY(-2px)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn.ghost:hover{background:#f0f0f0}
+.btn.danger{background:#e11d48;color:#fff}
+.btn.danger:hover{background:#be123c}
+.btn.sm{padding:8px 14px;font-size:0.8rem;border-radius:4px}
+
+/* ---------- Duelos (Polaroids enfrentadas) ---------- */
+.arena{display:grid;grid-template-columns:1fr auto 1fr;gap:40px;align-items:center;max-width:900px;margin:0 auto}
+.vs{
+  font-family:'Playfair Display',serif;font-size:3rem;font-weight:800;font-style:italic;color:var(--muted);opacity:0.5;
+}
+.duel-card{padding:16px 16px 75px 16px}
+.duel-card.win{transform:scale(1.05) rotate(0deg);box-shadow:0 0 0 4px #10b981, 15px 25px 45px rgba(0,0,0,0.1)}
+.duel-actions{text-align:center;margin-top:40px}
+
+/* ---------- Modal Cuadro de Desglose Superpuesto ---------- */
+.overlay{
+  position:fixed;inset:0;z-index:100;background:rgba(250, 248, 245, 0.85);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;overflow-y:auto;padding:40px 20px;
+}
+.overlay.open{display:flex;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+#rateModal{width:100%;display:flex;justify-content:center;align-items:center;outline:none}
+
+.scene{
+  display:flex;align-items:center;justify-content:center;max-width:1000px;width:100%;position:relative;
+}
+.scene-photo{
+  width:320px;flex-shrink:0;transform:rotate(-3deg);z-index:2;box-shadow:20px 25px 45px rgba(0,0,0,0.15);pointer-events:none;
+}
+.scene-breakdown{
+  background:#fff;padding:40px 50px;max-width:600px;width:100%;
+  box-shadow:15px 20px 50px rgba(0,0,0,0.1);border:1px solid #eaeaea;
+  transform:rotate(2deg) translateX(-40px);z-index:3;max-height:85vh;overflow-y:auto;position:relative;
+  animation:slideOverlap .5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes slideOverlap{
+  from{transform:translateX(40px) rotate(6deg);opacity:0}
+  to{transform:translateX(-40px) rotate(2deg);opacity:1}
+}
+
+.close{
+  position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:50%;border:1px solid var(--border);
+  background:#f9f9f9;color:var(--text);cursor:pointer;font-size:1.1rem;display:grid;place-items:center;transition:0.2s;
+}
+.close:hover{background:#eee;transform:rotate(90deg)}
+
+.breakdown-title{
+  font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;margin-bottom:24px;line-height:1.1;color:#111;border-bottom:2px solid #111;padding-bottom:12px;
+}
+.sec-title{font-size:0.8rem;text-transform:uppercase;letter-spacing:2px;font-weight:700;margin:30px 0 10px;display:flex;align-items:center;gap:8px;color:#111}
+.sec-title.pos{color:var(--glass-good-text)} .sec-title.neg{color:var(--glass-bad-text)}
+.sec-note{font-size:0.8rem;color:var(--muted);margin:-6px 0 16px;font-style:italic;font-weight:300}
+
+.crit{
+  display:grid;grid-template-columns:1fr 180px 40px;gap:12px;align-items:center;
+  padding:10px 0;border-bottom:1px dashed var(--border);font-size:0.95font;font-weight:500;
+}
+.crit i{width:20px;text-align:center;margin-right:6px;opacity:.85;color:var(--muted)}
+.crit output{font-family:'Playfair Display',serif;font-weight:700;font-size:1.2rem;text-align:center}
+
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:#e5e5e5;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#111;cursor:pointer;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.2);transition:0.2s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#111;cursor:pointer;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.2)}
+.neg-range::-webkit-slider-thumb{background:#e11d48}
+.neg-range::-moz-range-thumb{background:#e11d48}
+
+textarea,input[type=text],input[type=url]{
+  width:100%;font:inherit;color:var(--text);padding:14px 16px;border-radius:4px;outline:none;
+  background:#fafafa;border:1px solid var(--border);transition:.2s;font-size:0.95rem;
+}
+textarea{resize:vertical;min-height:90px}
+textarea:focus,input:focus{border-color:#111;background:#fff}
+::placeholder{color:rgba(0,0,0,0.3)}
+
+.preview{display:flex;justify-content:space-between;align-items:center;margin-top:30px;padding:20px;background:#fdfdfd;border:1px solid var(--border)}
+.preview span{font-size:0.9rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.preview b{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:800}
+
+.comments{margin-top:24px;display:flex;flex-direction:column;gap:16px}
+.comment{padding:16px;background:#fbfbfb;border-left:3px solid var(--border);font-size:0.95rem;font-style:italic;line-height:1.5}
+.comment small{display:block;color:var(--muted);margin-top:8px;font-size:0.75rem;font-style:normal;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+
+/* ---------- Admin ---------- */
+.admin-form{padding:30px;background:#fff;border:1px solid var(--border);margin-bottom:40px;display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:16px;align-items:end}
+.admin-form label{font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px}
+.table-wrap{background:#fff;border:1px solid var(--border);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:0.95rem}
+th,td{padding:16px 20px;text-align:left;border-bottom:1px solid var(--border)}
+th{font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;background:#fafafa}
+tbody tr{transition:.2s}
+tbody tr:hover{background:#fdfdfd}
+td img{width:48px;height:48px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:12px;border:1px solid var(--border)}
+.row-actions{display:flex;gap:6px}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);font-style:italic}
+
+/* ---------- Toast ---------- */
+#toast{
+  position:fixed;bottom:30px;left:50%;transform:translate(-50%,120px);z-index:200;
+  padding:16px 32px;background:#111;color:#fff;font-weight:500;font-size:0.95rem;letter-spacing:0.5px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);transition:.4s cubic-bezier(.2,1.2,.4,1);
+}
+#toast.show{transform:translate(-50%,0)}
+footer{text-align:center;color:var(--muted);font-size:0.8tv;font-weight:400;padding-bottom:40px;letter-spacing:0.5px}
+
+/* ---------- Responsive ---------- */
+@media(max-width:850px){
+  .scene{flex-direction:column;padding-top:20px}
+  .scene-photo{transform:rotate(-1deg);margin-bottom:-50px;width:260px;z-index:4}
+  .scene-breakdown{transform:none;padding:70px 20px 30px;max-width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.1)}
+  .arena{grid-template-columns:1fr;gap:20px}
+  .vs{margin:0 auto}
+  .crit{grid-template-columns:1fr;gap:8px;text-align:center;padding:16px 0}
+  .crit output{display:inline-block}
+  .crit i{display:none}
+  .admin-form{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr;padding:20px}
+  nav{flex-direction:column;padding:20px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" id="logo" title="Rankea a tu Maestro"><i class="fa-solid fa-feather-pointed"></i><span>Rankea a tu Maestro</span></div>
+  <div class="tabs">
+    <button class="tab active" data-view="ranking"><i class="fa-solid fa-ranking-star"></i><span>Ranking</span></button>
+    <button class="tab" data-view="duelos"><i class="fa-solid fa-hand-fist"></i><span>Duelos</span></button>
+    <button class="tab hidden" data-view="admin" id="tabAdmin"><i class="fa-solid fa-user-shield"></i><span>Admin</span></button>
+    <button class="tab lock" id="lockBtn" title="Acceso administrador"><i class="fa-solid fa-lock"></i></button>
+  </div>
+</nav>
+
+<main>
+  <!-- RANKING -->
+  <section id="view-ranking" class="view">
+    <div class="hero">
+      <h1>Top <span>Semanal</span> de Maestros</h1>
+      <p>Califica de forma anónima. Los resultados se ordenan por puntuación global.</p>
+    </div>
+    <div class="grid" id="rankGrid"></div>
+  </section>
+
+  <!-- DUELOS -->
+  <section id="view-duelos" class="view hidden">
+    <div class="hero">
+      <h1>Arena de <span>Duelos</span></h1>
+      <p>¿Con cuál maestro te quedarías? Haz clic en tu favorito.</p>
+    </div>
+    <div class="arena" id="arena"></div>
+    <div class="duel-actions"><button class="btn ghost" id="skipDuel"><i class="fa-solid fa-shuffle"></i> Saltar duelo</button></div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="view-admin" class="view hidden">
+    <div class="hero">
+      <h1>Panel de <span>Administración</span></h1>
+      <p>Gestiona los maestros registrados (Crear · Leer · Actualizar · Eliminar).</p>
+    </div>
+    <form class="admin-form" id="teacherForm" autocomplete="off">
+      <input type="hidden" id="fId">
+      <div><label for="fName">Nombre</label><input type="text" id="fName" placeholder="Ej. Mtra. Ana López" required maxlength="60"></div>
+      <div><label for="fSubject">Materia</label><input type="text" id="fSubject" placeholder="Ej. Química" required maxlength="40"></div>
+      <div><label for="fPhoto">URL de imagen pública (opcional)</label><input type="url" id="fPhoto" placeholder="https://..."></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" type="submit" id="fSubmit"><i class="fa-solid fa-plus"></i> <span>Agregar</span></button>
+        <button class="btn ghost hidden" type="button" id="fCancel">Cancelar</button>
+      </div>
+    </form>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Maestro</th><th>Materia</th><th>Calificaciones</th><th>Score</th><th>Popularidad</th><th>Acciones</th></tr></thead>
+        <tbody id="adminBody"></tbody>
+      </table>
+    </div>
+    <div style="text-align:center;margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn ghost" id="resetDemo"><i class="fa-solid fa-rotate-left"></i> Restablecer datos demo</button>
+      <button class="btn ghost" id="logoutAdmin"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión admin</button>
+    </div>
+  </section>
+</main>
+
+<footer>Prototipo académico · Los maestros y calificaciones de ejemplo son totalmente ficticios · Datos guardados solo en tu navegador (localStorage)</footer>
+
+<!-- MODAL CALIFICAR -->
+<div class="overlay" id="rateOverlay">
+  <div id="rateModal" role="dialog" aria-modal="true" tabindex="-1"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================
+   CONFIGURACIÓN Y CRITERIOS
+===================================================== */
+const STORAGE_KEY = 'rankea_maestros_v1';
+const ADMIN_PASSWORD = 'admin2024';
+
+// Criterios positivos: 1 (muy mal) → 5 (excelente)
+const POS = [
+  ['claridad',      'Claridad al explicar', 'fa-lightbulb'],
+  ['dominio',       'Dominio del tema',     'fa-brain'],
+  ['trato',         'Trato',                'fa-handshake'],
+  ['asistencia',    'Asistencia',           'fa-calendar-check'],
+  ['mentoria',      'Mentoría',             'fa-seedling'],
+  ['guia',          'Guía',                 'fa-compass'],
+  ['disponibilidad','Disponibilidad',       'fa-clock'],
+  ['ensenanza',     'Enseñanza',            'fa-chalkboard-user']
+];
+// Criterios críticos: 1 (nunca ocurre) → 5 (ocurre de forma grave/constante)
+const NEG = [
+  ['acoso',        'Acoso',            'fa-triangle-exclamation'],
+  ['favoritismo',  'Favoritismo',      'fa-heart-crack'],
+  ['soborno',      'Soborno',          'fa-money-bill-wave'],
+  ['abuso',        'Abuso de poder',   'fa-gavel'],
+  ['etica',        'Falta de ética',   'fa-scale-unbalanced']
+];
+
+/* =====================================================
+   LÓGICA MATEMÁTICA
+   - posAvg  = promedio de los criterios positivos (1-5)
+   - sev_i   = (valor - 1) / 4  → severidad 0..1 por criterio crítico
+   - penalty = min(0.95, 0.45·promedio(sev) + 0.55·max(sev))
+   - score   = posAvg · (1 − penalty)           (escala 0-5)
+   El componente "max" hace que UN solo criterio crítico alto
+   ya hunda drásticamente la calificación.
+   Score global del maestro = promedio de score de cada reseña.
+===================================================== */
+const avg = a => a.reduce((s, v) => s + v, 0) / (a.length || 1);
+
+function ratingScore(scores) {
+  const posAvg = avg(POS.map(([k]) => Number(scores[k])));
+  const sev = NEG.map(([k]) => (Number(scores[k]) - 1) / 4);
+  const penalty = Math.min(0.95, 0.45 * avg(sev) + 0.55 * Math.max(...sev));
+  return { posAvg, penalty, score: posAvg * (1 - penalty) };
+}
+function teacherScore(t) {
+  if (!t.ratings.length) return null;
+  return avg(t.ratings.map(r => ratingScore(r.scores).score));
+}
+const scoreClass = s => s === null ? 'none' : s >= 3.6 ? 'good' : s >= 2.2 ? 'mid' : 'bad';
+
+/* =====================================================
+   ALMACENAMIENTO Y DATOS DE EJEMPLO (ficticios)
+===================================================== */
+let seedState = 7;
+const rnd = () => (seedState = (seedState * 9301 + 49297) % 233280) / 233280;
+const jitter = (base, spread = 1) => Math.max(1, Math.min(5, Math.round(base + (rnd() - .5) * 2 * spread)));
+
+function mockRatings(n, posBase, negBase, comments) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const scores = {};
+    POS.forEach(([k]) => scores[k] = jitter(posBase));
+    NEG.forEach(([k]) => scores[k] = jitter(negBase, .8));
+    out.push({
+      scores,
+      comment: comments[i % comments.length] || '',
+      date: new Date(Date.now() - (i + 1) * 86400000 * 1.7).toISOString()
+    });
+  }
+  return out;
+}
+function demoData() {
+  seedState = 7;
+  return [
+    { id: uid(), name: 'Dra. Elena Marroquín', subject: 'Matemáticas', photo: '', pop: 14,
+      ratings: mockRatings(9, 4.7, 1, ['Explica con mucha paciencia y siempre resuelve dudas.', 'Sus clases son claras y muy bien organizadas.', 'Excelente guía para el examen final.']) },
+    { id: uid(), name: 'Mtro. Javier Solano', subject: 'Historia', photo: '', pop: 9,
+      ratings: mockRatings(7, 4.0, 1.4, ['Muy buen dominio del tema, aunque deja mucha lectura.', 'Hace dinámicas interesantes.', 'A veces tarda en entregar calificaciones.']) },
+    { id: uid(), name: 'Lic. Camila Ortega', subject: 'Programación', photo: '', pop: 21,
+      ratings: mockRatings(11, 4.4, 1.2, ['Aprendí más con ella que en todo el semestre pasado.', 'Siempre disponible en horas de asesoría.', 'Muy buena mentora para proyectos.']) },
+    { id: uid(), name: 'Ing. Raúl Beltrán', subject: 'Física', photo: '', pop: 3,
+      ratings: mockRatings(6, 3.6, 4.0, ['Se nota que sabe, pero hay alumnos con trato preferencial.', 'Sus reglas cambian según el alumno.', 'Las clases son confusas.']) }
+  ];
+}
+function uid() { return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+let db = load();
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* almacenamiento no disponible */ }
+  const d = { teachers: demoData() };
+  save(d);
+  return d;
+}
+function save(d = db) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch (e) { toast('No se pudo guardar en el navegador'); }
+}
+
+/* =====================================================
+   UTILIDADES
+===================================================== */
+const $ = (s, r = document) => r.querySelector(s); const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = s => s === null ? '—' : s.toFixed(1);
+
+function avatarSvg(name) {
+  const ini = name.replace(/^(Dra?\.|Mtr[oa]\.|Lic\.|Ing\.|Prof\.)\s*/i, '').split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%23d4cfc7'/><text x='50%' y='54%' dominant-baseline='middle' text-anchor='middle' font-family='Inter,sans-serif' font-weight='300' font-size='78' fill='white'>${ini}</text></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+const photoOf = t => t.photo && /^https?:\/\//i.test(t.photo) ? t.photo : avatarSvg(t.name);
+const img = (t, cls = 'avatar') => `<img class="${cls}" src="${esc(photoOf(t))}" alt="${esc(t.name)}" data-name="${esc(t.name)}" loading="lazy" referrerpolicy="no-referrer">`;
+
+document.addEventListener('error', e => {
+  const el = e.target;
+  if (el.tagName === 'IMG' && el.dataset.name && !el.dataset.fb) {
+    el.dataset.fb = '1';
+    el.src = avatarSvg(el.dataset.name);
+  }
+}, true);
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast');   t.textContent = msg; t.classList.add('show');   clearTimeout(toastTimer);   toastTimer = setTimeout(() => t.classList.remove('show'), 2600); }  /* =====================================================    NAVEGACIÓN SPA ===================================================== */ let isAdmin = false; let currentView = 'ranking'; function go(view) {   if (view === 'admin' && !isAdmin) return;   currentView = view;   $$('.view').forEach(v => v.classList.add('hidden'));$('#view-' + view).classList.remove('hidden');
+  $$('.tab[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));   if (view === 'ranking') renderRanking();   if (view === 'duelos') newDuel();   if (view === 'admin') renderAdmin();   window.scrollTo({ top: 0, behavior: 'smooth' }); } $$
+('.tab[data-view]').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
+
+/* =====================================================
+   1) RANKING
+===================================================== */
+function sortedTeachers() {
+  return [...db.teachers].sort((a, b) => {
+    const sa = teacherScore(a), sb = teacherScore(b);
+    if (sa === null && sb === null) return b.pop - a.pop;
+    if (sa === null) return 1;
+    if (sb === null) return -1;
+    return sb - sa || b.pop - a.pop;
+  });
+}
+function renderRanking() {
+  const grid = $('#rankGrid');
+  if (!db.teachers.length) {
+    grid.innerHTML = '<div class="glass empty" style="grid-column:1/-1"><i class="fa-solid fa-user-slash" style="font-size:2rem"></i><p style="margin-top:12px">Aún no hay maestros registrados. Un administrador puede agregarlos.</p></div>';
+    return;
+  }
+  grid.innerHTML = sortedTeachers().map((t, i) => {
+    const s = teacherScore(t);
+    const rot = (Math.random() * 6 - 3).toFixed(2);
+    return `<article class="card" style="transform: rotate(${rot}deg)" data-id="${t.id}" tabindex="0">
+      <div class="rank ${i < 3 ? 'r' + (i + 1) : ''}">#${i + 1}</div>
+      <div class="score ${scoreClass(s)}"><i class="fa-solid fa-star"></i>${s === null ? 'N/A' : fmt(s)}</div>
+      ${img(t)}
+      <h3>${esc(t.name)}</h3>
+      <div class="subject">${esc(t.subject)}</div>
+    </article>`;
+  }).join('');
+}
+$('#rankGrid').addEventListener('click', e => {
+  const c = e.target.closest('.card'); if (c) openRate(c.dataset.id);
+});
+$('#rankGrid').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { const c = e.target.closest('.card'); if (c) openRate(c.dataset.id); }
+});
+
+/* =====================================================
+   2) MODAL DE CALIFICACIÓN ANÓNIMA (CUADRO SUPERPUESTO)
+===================================================== */
+let rateTeacherId = null;
+function critRow([k, label, icon], neg) {
+  const def = neg ? 1 : 3;
+  return `<div class="crit"><span><i class="fa-solid ${icon}"></i>${label}</span>
+    <input type="range" min="1" max="5" step="1" value="${def}" name="${k}" class="${neg ? 'neg-range' : ''}" aria-label="${label}">
+    <output>${def}</output></div>`;
+}
+function openRate(id) {
+  const t = db.teachers.find(x => x.id === id); if (!t) return;
+  rateTeacherId = id;
+  const s = teacherScore(t);
+  const recent = t.ratings.filter(r => r.comment).slice(-3).reverse();
+  
+  $('#rateModal').innerHTML = `
+    <div class="scene">
+      <article class="card scene-photo" style="pointer-events:none;">
+        <div class="score ${scoreClass(s)}"><i class="fa-solid fa-star"></i>${s === null ? 'N/A' : fmt(s)}</div>
+        ${img(t)}
+        <h3>${esc(t.name)}</h3>
+        <div class="subject">${esc(t.subject)}</div>
+      </article>
+
+      <div class="scene-breakdown">
+        <button class="close" id="rateClose" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        <h2 class="breakdown-title">Cuadro de desglose<br>de calificaciones</h2>
+        
+        <form id="rateForm">
+          <div class="sec-title pos"><i class="fa-solid fa-circle-check"></i> Criterios positivos</div>
+          <div class="sec-note">1 = Muy deficiente · 5 = Excelente</div>
+          ${POS.map(c => critRow(c, false)).join('')}
+          
+          <div class="sec-title neg"><i class="fa-solid fa-shield-halved"></i> Criterios críticos</div>
+          <div class="sec-note">1 = Nunca ocurre · 5 = Ocurre de forma grave. Calificar alto aquí reduce drásticamente el score.</div>
+          ${NEG.map(c => critRow(c, true)).join('')}
+          
+          <div class="sec-title" style="color:var(--text)"><i class="fa-solid fa-message"></i> Comentario anónimo</div>
+          <textarea name="comment" maxlength="400" placeholder="Cuenta tu experiencia de forma respetuosa (opcional)..."></textarea>
+          
+          <div class="preview"><span>Impacto de tu reseña</span><b id="liveScore">—</b></div>
+          
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button type="button" class="btn ghost" id="rateCancel">Cancelar</button>
+            <button type="submit" class="btn"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+          </div>
+        </form>
+
+        ${recent.length ? `<div class="sec-title" style="color:var(--muted); margin-top:30px;"><i class="fa-solid fa-quote-left"></i> Comentarios recientes</div>
+        <div class="comments">${recent.map(r => `<div class="comment">"${esc(r.comment)}"<small>Anónimo · ${new Date(r.date).toLocaleDateString('es-MX')}</small></div>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+    
+  $('#rateOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  $('#rateModal').focus();   updateLive(); } function readScores() {   const scores = {};   $$('#rateForm input[type=range]').forEach(i => scores[i.name] = Number(i.value));
+  return scores;
+}
+function updateLive() {
+  const r = ratingScore(readScores());
+  const el = $('#liveScore'); if (!el) return;
+  el.textContent = fmt(r.score);
+  el.style.color = r.score >= 3.6 ? 'var(--glass-good-text)' : r.score >= 2.2 ? 'var(--glass-mid-text)' : 'var(--glass-bad-text)';
+}
+function closeRate() {
+  $('#rateOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  rateTeacherId = null;
+}
+$('#rateModal').addEventListener('input', e => {
+  if (e.target.type === 'range') { e.target.nextElementSibling.textContent = e.target.value; updateLive(); }
+});
+$('#rateModal').addEventListener('click', e => {
+  if (e.target.closest('#rateClose') || e.target.closest('#rateCancel')) closeRate();
+});
+$('#rateOverlay').addEventListener('mousedown', e => { if (e.target.id === 'rateOverlay') closeRate(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRate(); });
+$('#rateModal').addEventListener('submit', e => {
+  e.preventDefault();
+  const t = db.teachers.find(x => x.id === rateTeacherId); if (!t) return;
+  t.ratings.push({
+    scores: readScores(),
+    comment: new FormData(e.target).get('comment').trim().slice(0, 400),
+    date: new Date().toISOString()
+  });
+  save();
+  closeRate();
+  renderRanking();
+  toast('¡Gracias! Tu reseña anónima fue registrada');
+});
+
+/* =====================================================
+   3) ARENA DE DUELOS
+===================================================== */
+let duelPair = [];
+function newDuel() {
+  const arena = $('#arena');
+  if (db.teachers.length < 2) {
+    arena.style.display = 'block';
+    arena.innerHTML = '<div class="glass empty" style="padding:40px;text-align:center;">Se necesitan al menos 2 maestros para iniciar un duelo.</div>';
+    $('#skipDuel').classList.add('hidden');
+    return;
+  }
+  arena.style.display = ''; $('#skipDuel').classList.remove('hidden');
+  let a, b, tries = 0;
+  do {
+    const pool = [...db.teachers].sort(() => rnd() - .5 + Math.random() - .5);
+    [a, b] = pool;
+    tries++;
+  } while (db.teachers.length > 2 && [a.id, b.id].sort().join('|') === [...duelPair].sort().join('|') && tries < 10);
+  duelPair = [a.id, b.id];
+  
+  const rotA = (Math.random() * -6 - 2).toFixed(2);
+  const rotB = (Math.random() * 6 + 2).toFixed(2);
+
+  arena.innerHTML = `
+    <article class="card duel-card" style="transform: rotate(${rotA}deg)" data-id="${a.id}" tabindex="0">
+      ${img(a)}
+      <h3>${esc(a.name)}</h3>
+      <div class="subject">${esc(a.subject)}</div>
+    </article>
+    <div class="vs">VS</div>
+    <article class="card duel-card" style="transform: rotate(${rotB}deg)" data-id="${b.id}" tabindex="0">
+      ${img(b)}
+      <h3>${esc(b.name)}</h3>
+      <div class="subject">${esc(b.subject)}</div>
+    </article>`;
+}
+function pickDuel(id) {
+  const t = db.teachers.find(x => x.id === id); if (!t) return;
+  t.pop += 1; save();
+  const card = $(`.duel-card[data-id="${id}"]`);
+  if (card) card.classList.add('win');
+  toast(`+1 punto de popularidad para ${t.name}`);
+  setTimeout(newDuel, 600);
+}
+$('#arena').addEventListener('click', e => { const c = e.target.closest('.duel-card'); if (c) pickDuel(c.dataset.id); });
+$('#arena').addEventListener('keydown', e => { if (e.key === 'Enter') { const c = e.target.closest('.duel-card'); if (c) pickDuel(c.dataset.id); } });
+$('#skipDuel').addEventListener('click', newDuel);
+
+/* =====================================================
+   4) PANEL ADMIN (CRUD)
+===================================================== */
+function askAdmin() {
+  if (isAdmin) { go('admin'); return; }
+  const pw = prompt('Contraseña de administrador:');
+  if (pw === null) return;
+  if (pw === ADMIN_PASSWORD) {
+    isAdmin = true;
+    $('#tabAdmin').classList.remove('hidden');
+    $('#lockBtn').innerHTML = '<i class="fa-solid fa-lock-open"></i>';
+    toast('Modo administrador activado');
+    go('admin');
+  } else toast('Contraseña incorrecta');
+}
+function logoutAdmin() {
+  isAdmin = false;
+  $('#tabAdmin').classList.add('hidden');
+  $('#lockBtn').innerHTML = '<i class="fa-solid fa-lock"></i>';
+  go('ranking');
+  toast('Sesión de administrador cerrada');
+}
+$('#logo').addEventListener('dblclick', askAdmin);
+$('#logo').addEventListener('click', () => { if (currentView !== 'ranking') go('ranking'); });
+$('#lockBtn').addEventListener('click', askAdmin);
+$('#logoutAdmin').addEventListener('click', logoutAdmin);
+
+function renderAdmin() {
+  const body = $('#adminBody');
+  if (!db.teachers.length) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">Sin maestros. Agrega el primero con el formulario.</td></tr>';
+    return;
+  }
+  body.innerHTML = db.teachers.map(t => {
+    const s = teacherScore(t);
+    return `<tr data-id="${t.id}">
+      <td>${img(t, '')}${esc(t.name)}</td>
+      <td>${esc(t.subject)}</td>
+      <td>${t.ratings.length}</td>
+      <td><b style="font-weight:700">${fmt(s)}</b></td>
+      <td>${t.pop}</td>
+      <td><div class="row-actions">
+        <button class="btn sm ghost" data-act="edit"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn sm danger" data-act="del"><i class="fa-solid fa-trash"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+function resetForm() {
+  $('#teacherForm').reset(); $('#fId').value = '';
+  $('#fSubmit').innerHTML = '<i class="fa-solid fa-plus"></i> <span>Agregar</span>';
+  $('#fCancel').classList.add('hidden');
+}
+$('#fCancel').addEventListener('click', resetForm);
+$('#teacherForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#fName').value.trim(), subject = $('#fSubject').value.trim(), photo = $('#fPhoto').value.trim();
+  if (!name || !subject) return;
+  const id = $('#fId').value;
+  if (id) {
+    const t = db.teachers.find(x => x.id === id);
+    if (t) Object.assign(t, { name, subject, photo });
+    toast('Maestro actualizado');
+  } else {
+    db.teachers.push({ id: uid(), name, subject, photo, pop: 0, ratings: [] });
+    toast('Maestro agregado');
+  }
+  save(); resetForm(); renderAdmin();
+});
+$('#adminBody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]'); if (!btn) return;
+  const id = btn.closest('tr').dataset.id;
+  const t = db.teachers.find(x => x.id === id); if (!t) return;
+  if (btn.dataset.act === 'edit') {
+    $('#fId').value = t.id; $('#fName').value = t.name; $('#fSubject').value = t.subject; $('#fPhoto').value = t.photo || '';
+    $('#fSubmit').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Guardar</span>';
+    $('#fCancel').classList.remove('hidden');
+    $('#fName').focus(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else if (confirm(`¿Eliminar a "${t.name}" y todas sus reseñas? Esta acción no se puede deshacer.`)) {
+    db.teachers = db.teachers.filter(x => x.id !== id);
+    save(); renderAdmin(); toast('Maestro eliminado');
+  }
+});
+$('#resetDemo').addEventListener('click', () => {
+  if (!confirm('Se reemplazarán todos los datos actuales por los datos de ejemplo. ¿Continuar?')) return;
+  db = { teachers: demoData() }; save(); resetForm(); renderAdmin(); toast('Datos demo restablecidos');
+});
+
+/* =====================================================
+   INICIO
+===================================================== */
+renderRanking();
+</script>
+</body>
+</html>
